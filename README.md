@@ -1,9 +1,10 @@
-# Library Of Pybel
+# Library Of PHPbel
 ## About
-This is an open source python implementation of the [Library of Babel](https://libraryofbabel.info).
+This is an open source python and PHP implementation of the [Library of Babel](https://libraryofbabel.info).
 ## Functionality
-### Javascript Implementation
-The Javascript implementation of the Library of Babel can be found [here](https://cakenggt.github.io/Library-Of-Pybel/). The text and addresses generated will not be the same between the Python implementation and this one. The source code for this JS implementation is hosted in the gh-pages branch. There is a search box and an address selector.
+### Frontend Implementation
+The web implementation for this project is essentially just a frontend using Smenatic UI with PHP used to run and display output from the python script which's implementation is detailed below.
+
 ### Python Implementation
 *Note: all numbers are started at 0, not 1. To find the first page of a book, look for page 0*
 
