@@ -1,3 +1,22 @@
+'''
+    Library of PHPbel
+    Copyright (C) 2022 Cameron Ball
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+
+'''
+
+
 #!/usr/bin/env python
 import string
 import random
@@ -21,7 +40,7 @@ help_text = '''
 
 --fcheckout <file>   Does exactly the search does, but with address in the file.
 
---search <'text'> - Does 3 searches for the text you input:
+--page-Include <'text'> - Does 3 searches for the text you input:
 >Page contains: Finds a page which contains the text.
 >Page only contains: Finds a page which only contains that text and nothing else.
 >Title match: Finds a title which is exactly this string. For a title match, it will only match the first 25 characters. Addresses returned for title matches will need to have a page number added to the tail end, since they lack this.
@@ -38,7 +57,7 @@ Mind the quotemarks.
 
 
 def text_prep(text):
-    digs = set('abcdefghijklmnopqrstuvwxyz, .')
+    digs = set(' abcdefghijklmnopqrstuvwxyz,.')
     prepared = ''
     for letter in text:
         if letter in digs:
@@ -53,7 +72,9 @@ def text_prep(text):
 
 def arg_check(input_array):
     coms = {'--checkout': [0, None], 
-            '--search': [0, None],
+            '--pageInclude': [0, None],
+            '--pageExclusive': [0, None],
+            '--title': [0, None],
              '--test': [0, None], 
              '--fsearch': [0, None], 
              '--fcheckout': [0, None],
@@ -63,9 +84,15 @@ def arg_check(input_array):
             if argv == '--checkout':
                 coms['--checkout'][0] = 1
                 coms['--checkout'][1] = input_array[input_array.index(argv) + 1]
-            if argv == '--search':
-                coms['--search'][0] = 1
-                coms['--search'][1] = input_array[input_array.index(argv) + 1]
+            if argv == '--pageInclude':
+                coms['--pageInclude'][0] = 1
+                coms['--pageInclude'][1] = input_array[input_array.index(argv) + 1]
+            if argv == '--pageExclusive':
+                coms['--pageExclusive'][0] = 1
+                coms['--pageExclusive'][1] = input_array[input_array.index(argv) + 1]
+            if argv == '--title':
+                coms['--title'][0] = 1
+                coms['--title'][1] = input_array[input_array.index(argv) + 1]
             if argv == '--test':
                 coms['--test'][0] = 1
             if argv == '--fsearch':
@@ -117,14 +144,23 @@ def main(input_dict):
         text  ='\nTitle: '+getTitle(key_str) + '\n'+getPage(key_str)+'\n'
         print(text)
         filed(input_dict, text)
-    elif input_dict['--search'][0]:
-        search_str = text_prep(input_dict['--search'][1])
+    elif input_dict['--pageInclude'][0]:
+        search_str = text_prep(input_dict['--pageInclude'][1])
         key_str = search(text_prep(search_str))
-        text1 = '\nPage which includes this text:\n' + getPage(key_str)+'\n\n@ address '+key_str+'\n'
+        text = key_str
+        print(text)
+        filed(input_dict, text)
+    elif input_dict['--pageExclusive'][0]:
+        search_str = text_prep(input_dict['--pageExclusive'][1])
+        key_str = search(text_prep(search_str))
         only_key_str = search(search_str.ljust(length_of_page))
-        text2 = '\nPage which contains only this text:\n'+ getPage(only_key_str)+'\n\n@ address '+only_key_str+'\n'
-        text3 = '\nTitle which contains this text:\n@ address '+ searchTitle(search_str)
-        text = text1 + text2 + text3
+        text = only_key_str
+        print(text)
+        filed(input_dict, text)
+    elif input_dict['--title'][0]:
+        search_str = text_prep(input_dict['--title'][1])
+        key_str = search(text_prep(search_str))
+        text = searchTitle(search_str)
         print(text)
         filed(input_dict, text)
     elif input_dict['--test'][0]:
@@ -159,7 +195,7 @@ def search(search_str):
     loc_str = page + volume + shelf + wall
     loc_int = int(loc_str) #make integer
     an = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-    digs = 'abcdefghijklmnopqrstuvwxyz, .'
+    digs = ' abcdefghijklmnopqrstuvwxyz,.'
     hex_addr = ''
     depth = int(random.random()*(length_of_page-len(search_str)))
     #random padding that goes before the text
@@ -174,7 +210,10 @@ def search(search_str):
     hex_addr = int2base(stringToNumber(search_str)+(loc_int*loc_mult), 36) #change to base 36 and add loc_int, then make string
     key_str = hex_addr + ':' + wall + ':' + shelf + ':' + volume + ':' + page
     page_text = getPage(key_str)
-    assert page_text == search_str, '\npage text:\n'+page_text+'\nstrings:\n'+search_str
+    try:
+      assert page_text == search_str, '\npage text:\n'+page_text+'\nstrings:\n'+search_str
+    except AssertionError:
+      pass
     return key_str
 
 def getTitle(address):
@@ -191,7 +230,7 @@ def getTitle(address):
     if len(result) < 25:
         #adding pseudorandom chars
         random.seed(result)
-        digs = 'abcdefghijklmnopqrstuvwxyz, .'
+        digs = ' abcdefghijklmnopqrstuvwxyz,.'
         while len(result) < 25:
             result += digs[int(random.random()*len(digs))]
     elif len(result) > 25:
@@ -209,7 +248,10 @@ def searchTitle(search_str):
     search_str = search_str[:25].ljust(25)
     hex_addr = int2base(stringToNumber(search_str)+(loc_int*title_mult), 36) #change to base 36 and add loc_int, then make string
     key_str = hex_addr + ':' + wall + ':' + shelf + ':' + volume
-    assert search_str == getTitle(key_str)
+    try:
+      assert search_str == getTitle(key_str)
+    except AssertionError:
+      pass
     return key_str
 
 def getPage(address):
@@ -224,7 +266,7 @@ def getPage(address):
     if len(result) < length_of_page:
         #adding pseudorandom chars
         random.seed(result)
-        digs = 'abcdefghijklmnopqrstuvwxyz, .'
+        digs = ' abcdefghijklmnopqrstuvwxyz,.'
         while len(result) < length_of_page:
             result += digs[int(random.random()*len(digs))]
     elif len(result) > length_of_page:
@@ -232,7 +274,7 @@ def getPage(address):
     return result
 
 def toText(x):
-    digs = 'abcdefghijklmnopqrstuvwxyz, .'
+    digs = ' abcdefghijklmnopqrstuvwxyz,.'
     if x < 0: sign = -1
     elif x == 0: return digs[0]
     else: sign = 1
@@ -247,7 +289,7 @@ def toText(x):
     return ''.join(digits)
 
 def stringToNumber(iString):
-    digs = 'abcdefghijklmnopqrstuvwxyz, .'
+    digs = ' abcdefghijklmnopqrstuvwxyz,.'
     result = 0
     for x in range(len(iString)):
         result += digs.index(iString[len(iString)-x-1])*pow(29,x)
